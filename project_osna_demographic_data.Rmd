@@ -1,0 +1,237 @@
+---
+title: "project_osna1"
+output: html_document
+date: "2024-10-30"
+---
+```{r}
+# Install and load packages
+install.packages("readxl")
+library(readxl)
+
+install.packages("naniar")
+library(naniar)
+
+install.packages("ggplot2")
+library(ggplot2)
+# install.packages(c("dplyr", "ggplot2", "tidyverse"))
+# library(dplyr)
+# library(ggplot2)
+# library(tidyverse)
+```
+
+```{r}
+# Load and view dataset
+demograpgh_data <- read_excel("~/Documents/demograpgh_data.xlsx", sheet = "Sheet1")
+View(demograpgh_data)
+head(demograpgh_data)
+```
+
+```{r}
+# Structure and type of columns in dataset
+str(demograpgh_data)
+```
+
+``````{r}
+# Summary statistics
+summary(demograpgh_data)
+``````
+
+
+```````{r}
+# Check for Missing Values
+colSums(is.na(demograpgh_data))
+`````
+
+```````{r}
+# Check for Missing Values
+colSums(is.na(demograpgh_data))
+
+gg_miss_var(demograpgh_data)
+`````
+```````{r}
+# Check for duplicate rows
+duplicates <- data[duplicated(demograpgh_data), ]
+print(duplicates)
+``````
+
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+```
+
+```````{r}
+# Univariate analysis
+# Plot for total population gender based in entire ditrict
+# Prepare data for stacked bar chart
+library(ggplot2)
+
+# Create the gender data frame
+gender_data <- data.frame(
+  Gender = c("Male", "Female"),
+  Count = c(sum(demograpgh_data$male_population), sum(demograpgh_data$female_population))
+)
+
+# Create the pie chart with counts
+ggplot(gender_data, aes(x = "", y = Count, fill = Gender)) +
+  geom_bar(stat = "identity") +
+  coord_polar("y") +
+  labs(title = "Gender Distribution of Population", fill = "Gender") +
+  theme_void() +  # Clean up the plot
+  geom_text(aes(label = Count), 
+            position = position_stack(vjust = 0.5),  # Position labels in the middle of slices
+            color = "white")  # Adjust text color for visibility
+``````
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(scales)  # Load the scales package
+
+# Create a summary data frame for gender population
+gender_data <- demograpgh_data %>%
+  select(countyname, male_population, female_population) %>%
+  pivot_longer(cols = c(male_population, female_population), names_to = "Gender", values_to = "Count")
+
+# Grouped bar plot for gender
+ggplot(gender_data, aes(x = countyname, y = Count, fill = Gender)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Gender Population by County", x = "County", y = "Population Count") +
+  scale_y_continuous(labels = comma) +  # Format y-axis to show normal numbers
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+````
+
+```{r}
+#density plot for population in counties
+library(ggplot2)
+library(scales)  # Load scales for formatting
+
+ggplot(demograpgh_data, aes(x = population)) + 
+  geom_density(fill = "blue", alpha = 0.5) + 
+  labs(title = "Density Plot of Population", x = "Population", y = "Density") + 
+  scale_x_continuous(labels = comma) +  # Format x-axis to show normal numbers
+  scale_y_continuous(labels = comma) +  # Format y-axis to show normal numbers
+  theme_minimal()
+
+```
+```{r}
+# Density plot for male and female populations
+ggplot(gender_data, aes(x = Count, fill = Gender)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density Plot of Male and Female Populations", 
+       x = "Population Count", 
+       y = "Density") +
+  scale_x_continuous(labels = comma) +  # Format x-axis to show normal numbers
+  scale_y_continuous(labels = comma) +  # Format y-axis to show normal numbers
+  theme_minimal()
+```
+
+```{r}
+ggplot(demograpgh_data, aes(x = reorder(countyname, medinc), y = medinc)) + 
+  geom_bar(stat = "identity", fill = "orange") + 
+  labs(title = "Median Income by County", x = "County", y = "Median Income") + 
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+# Load necessary library
+# Load necessary library
+library(ggplot2)
+
+# Define age columns
+age_columns <- c('age_18_19', 'age_20_24', 'age_25_29', 'age_30_34', 
+                 'age_35_44', 'age_45_54', 'age_55_64', 'age_65_74', 
+                 'age_75_84', 'age_85over')
+
+# Create histograms for each age group
+for (column in age_columns) {
+    p <- ggplot(demograpgh_data, aes_string(x = column)) +
+        geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.5) +
+        labs(title = paste("Distribution of", column), x = column, y = "Frequency") +
+        theme_minimal() +
+        theme(text = element_text(size = 12))
+    
+    print(p)  # Display the plot
+}
+
+
+```
+```{r}
+# Assuming your dataset is already loaded as 'demograpgh_data'
+
+# Summarize gender counts for Male and Female only
+gender_data <- data.frame(
+    Gender = c("Male", "Female"),
+    Count = c(sum(demograpgh_data$voters_gender_m, na.rm = TRUE),
+               sum(demograpgh_data$voters_gender_f, na.rm = TRUE))
+)
+
+# Create pie chart for gender distribution
+ggplot(gender_data, aes(x = "", y = Count, fill = Gender)) +
+    geom_bar(stat = "identity") +
+    coord_polar("y") +
+    labs(title = "Gender Distribution of Voters", fill = "Gender") +
+    theme_void() +
+    geom_text(aes(label = paste0(round(Count / sum(Count) * 100, 1), "%")),
+              position = position_stack(vjust = 0.5)) +
+    theme(legend.position = "bottom")  # Optional: adjust legend position
+
+
+```
+
+```{r}
+# Load necessary library
+library(corrplot)
+
+# Select numeric columns for correlation
+numeric_data <- demograpgh_data[, c("population", "male_population", "female_population", "medinc", "pov_rate", "total_reg")]
+
+# Calculate correlation matrix
+cor_matrix <- cor(numeric_data)
+
+# Plot correlation matrix
+corrplot(cor_matrix, method = "circle")
+
+```
+
+```{r}
+library(ggplot2)
+
+# Ensure pov_rate is in decimal form
+demograpgh_data$pov_rate <- demograpgh_data$pov_rate / 100
+
+ggplot(demograpgh_data, aes(x = medinc, y = pov_rate)) +
+    geom_point(color = "blue", alpha = 0.6) +
+    labs(title = "Median Income vs. Poverty Rate",
+         x = "Median Income",
+         y = "Poverty Rate (%)") +
+    scale_x_continuous(labels = scales::comma) +  # Format x-axis
+    scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Format y-axis as percentage
+    theme_minimal()
+
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(demograpgh_data, aes(x = population, y = medinc)) +
+  geom_point(color = "blue", alpha = 0.6) +
+  labs(title = "Scatter Plot of Population vs. Median Income", 
+       x = "Population", 
+       y = "Median Income") +
+  scale_x_continuous(labels = scales::comma) +  # Format x-axis to remove scientific notation
+  scale_y_continuous(labels = scales::comma) +   # Format y-axis to remove scientific notation
+  theme_minimal()
+
+
+```
+
+

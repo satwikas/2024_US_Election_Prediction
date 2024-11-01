@@ -1,0 +1,595 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+file.exists("/Users/satwika/Downloads/il_cong_adopted_2021/HB1291FA1.shp")
+
+```
+
+```{r}
+library(sf)
+il_congdst_sf <- sf::st_read("/Users/satwika/Desktop/OSNA project/il_cong_adopted_2021/HB1291FA1.shp")
+```
+
+```{r}
+nrow(il_congdst_sf)
+View(il_congdst_sf)
+```
+
+```{r}
+library(ggplot2)
+ggplot(il_congdst_sf) + 
+  geom_sf() + 
+  labs(title = "Congressional Districts of Illinois")
+
+```
+
+```{r}
+il122 <- filter(il_congdst_sf, DISTRICT == 12)
+```
+
+```{r}
+ggplot(il122) + 
+  geom_sf() + 
+  labs(title = "Illinois Congressional District 12")
+```
+
+```{r}
+
+# Replace "path_to_shapefile" with the actual path to your .shp file
+shapefile <- st_read("/Users/satwika/Downloads/il_2022_gen_prec (2)/il_2022_gen_cong_prec/il_2022_gen_cong_prec.shp")
+
+```
+
+```{r}
+nrow(shapefile)
+View(shapefile)
+
+
+```
+
+```{r}
+# Load dplyr for filtering
+library(dplyr)
+
+names(shapefile)
+
+```
+
+```{r}
+il12_prec <- filter(shapefile, CONG_DIST == 12)
+View(il12_prec)
+```
+
+```{r}
+il12_prec_sel <- il12_prec %>% select(UNIQUE_ID,
+                                      COUNTYFP,
+                                      County,
+                                      Precinct,
+                                      CONG_DIST,
+                                      GCON12DMAR,
+                                      GCON12OWRI,
+                                      GCON12RBOS,
+                                      geometry)
+View(il12_prec_sel)
+
+```
+
+```{r}
+ggplot(il12_prec_sel) + 
+  geom_sf() + 
+  geom_sf(data = il122, fill = NA, lwd = 1.2)
+  labs(title = "Illinois 12 Congressional Districts Precincts")
+
+```
+
+```{r}
+il12_prec_win <- il12_prec_sel %>% mutate(
+  Winner  = case_when (
+    GCON12DMAR > GCON12RBOS ~ "Democratic",
+    GCON12DMAR < GCON12RBOS ~ "Republican",
+    TRUE ~ "Others") )
+```
+
+```{r}
+View(il12_prec_win)
+```
+
+```{r}
+ggplot(il12_prec_win, aes(color = Winner)) + 
+  geom_sf() + 
+  scale_color_manual(values = c("Democratic" = "blue",
+                                "Republican" = "red",
+                                "Others" = "green"))
+```
+
+```{r}
+ggplot(il12_prec_win, aes(fill = Winner)) + 
+  geom_sf() + 
+  scale_fill_manual(values = c("Democratic" = "blue",
+                                "Republican" = "red",
+                                "Others" = "green"))+
+  geom_sf(data = il122, fill = NA, lwd = 0.8) +
+  labs(title = "2022 IL Congressional District 12 Election Results by Precinct")
+```
+
+```{r}
+totalDvotes <- sum(il12_prec_win$GCON12DMAR)
+totalRvotes <- sum(il12_prec_win$GCON12RBOS)
+totalOvotes <- sum(il12_prec_win$GCON12OWRI)
+cat(totalDvotes, "votes for the Democrat\n")
+cat(totalRvotes, "votes for the Republican\n")
+cat(totalOvotes, "votes for others\n")
+
+```
+
+```{r}
+library(dplyr)
+
+# Summarize total votes for each category
+total_votes <- il12_prec_win %>%
+  summarise(
+    totalDvotes = sum(GCON12DMAR, na.rm = TRUE),
+    totalRvotes = sum(GCON12RBOS, na.rm = TRUE),
+    totalOvotes = sum(GCON12OWRI, na.rm = TRUE)
+  )
+
+# Print the results
+cat(total_votes$totalDvotes, "votes for the Democrat\n")
+cat(total_votes$totalRvotes, "votes for the Republican\n")
+cat(total_votes$totalOvotes, "votes for others\n")
+
+```
+
+```{r}
+il_prec_data_tbl <- readr::read_csv("/Users/satwika/Desktop/OSNA project/il_2022_gen_prec (5)/il_2022_gen_prec.csv",
+                             col_select = c(
+                               UNIQUE_ID,
+                               COUNTYFP,
+                               County,
+                               Precinct,
+                               G22USSDDUC,
+                               G22USSLRED,
+                               G22USSOWRI,
+                               G22USSRSAL),
+                             show_col_types = FALSE)
+```
+
+```{r}
+dim(il_prec_data_tbl)
+il_prec_data_tbl |> head()
+```
+
+```{r}
+il_prec_win_sen <- il12_prec_win |> 
+  left_join(il_prec_data_tbl, by = c("UNIQUE_ID" )) |> 
+  select(UNIQUE_ID,
+         starts_with("G"))
+il_prec_win_sen
+```
+
+```{r}
+il12_prec_cong_sen_win <- il_prec_win_sen %>% mutate(
+  CWinner = case_when (
+    GCON12DMAR > GCON12RBOS ~ "Democratic",
+    GCON12DMAR < GCON12RBOS ~ "Republican",
+    TRUE ~ "Others"), SWinner = case_when (
+      G22USSDDUC > G22USSRSAL ~ "Democratic",
+      G22USSDDUC < G22USSRSAL ~ "Republican",
+      TRUE ~ "Others") )
+
+head(il12_prec_cong_sen_win)
+```
+
+```{r}
+g1 <- ggplot(il12_prec_cong_sen_win, aes(fill = CWinner)) + 
+  geom_sf() + 
+  scale_fill_manual(values = c("Democratic" = "blue",
+                                "Republican" = "red",
+                                "Others" = "green"))+
+  geom_sf(data = il122, fill = NA, lwd = 0.8) +
+  labs(title = "2022 IL12 Congressional Election by Precinct")+
+  theme_void()
+
+g2 <- ggplot(il12_prec_cong_sen_win, aes(fill = SWinner)) + 
+  geom_sf() + 
+  scale_fill_manual(values = c("Democratic" = "blue",
+                                "Republican" = "red",
+                                "Others" = "green"))+
+  geom_sf(data = il122, fill = NA, lwd = 0.8) +
+  labs(title = "2022 IL12 Senate Election by Precinct")+
+  theme_void()
+
+
+```
+
+```{r}
+g1
+```
+
+```{r}
+g2
+```
+
+```{r}
+totalCDvotes <- sum(il12_prec_cong_sen_win$GCON12DMAR)
+totalCRvotes <- sum(il12_prec_cong_sen_win$GCON12RBOS)
+totalCOvotes <- sum(il12_prec_cong_sen_win$GCON14OWRI)
+totalSDvotes <- sum(il12_prec_cong_sen_win$G22USSDDUC, na.rm = TRUE)
+totalSRvotes <- sum(il12_prec_cong_sen_win$G22USSRSAL, na.rm = TRUE)
+totalSLvotes <- sum(il12_prec_cong_sen_win$G22USSLRED, na.rm = TRUE)
+totalSOvotes <- sum(il12_prec_cong_sen_win$G22USSOWRI, na.rm = TRUE)
+cat(totalCDvotes, "votes for the Democratic IL-12 Congressional District Candidate\n")
+cat(totalCRvotes, "votes for the Republican IL-12 Congressional District Candidate\n")
+cat(totalCOvotes, "votes for others in the IL-12 Congressional District Election\n")
+cat(totalSDvotes, "votes for the Democratic Candidate for Senate\n")
+cat(totalSRvotes, "votes for the Republican Candidate for Senate\n")
+cat(totalSLvotes, "votes for the Libertarian Candidate for Senate\n")
+cat(totalSOvotes, "votes for others in the Senate Election\n")
+totalCvotes <- totalCDvotes + totalCRvotes + totalCOvotes
+cat(totalCvotes, "total votes for IL-12 Congressional Representative\n")
+totalSvotes <- totalSDvotes + totalSRvotes + totalSLvotes + totalSOvotes
+cat(totalSvotes, "total votes IL Senator")
+```
+
+```{r}
+il12_prec_winper <- il12_prec_win %>% mutate(
+  Dper = GCON12DMAR/(GCON12DMAR+GCON12RBOS+GCON12OWRI),
+  Rper = GCON12RBOS/(GCON12DMAR+GCON12RBOS+GCON12OWRI)
+     )
+il12_prec_winper[["Dper"]][is.nan(il12_prec_winper[["Dper"]])] <- 0
+il12_prec_winper[["Rper"]][is.nan(il12_prec_winper[["Rper"]])] <- 0
+```
+
+```{r}
+g3 = ggplot(il12_prec_winper, aes(fill = Dper)) +
+  geom_sf() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  labs(title = "Fraction of votes for the Democrat", 
+       subtitle = "IL Congressional District 12 2022",
+       fill = "Fraction") +
+  theme_void()
+
+g4 = ggplot(il12_prec_winper, aes(fill = Rper)) +
+  geom_sf() +
+  scale_fill_distiller(palette = "Reds", direction = 1) +
+  labs(title = "Fraction of votes for the Republican", 
+       subtitle = "IL Congressional District 12 2022",
+       fill = "Fraction") +
+  theme_void()
+```
+
+```{r}
+g3
+```
+
+```{r}
+g4
+```
+
+```{r}
+il12_prec_winpersen <- il12_prec_cong_sen_win %>% mutate(
+  Dper = G22USSDDUC/(G22USSDDUC+G22USSRSAL+G22USSLRED+G22USSOWRI),
+  Rper = G22USSRSAL/(GCON12DMAR+G22USSRSAL+G22USSLRED+G22USSOWRI)
+     )
+il12_prec_winpersen[["Dper"]][is.nan(il12_prec_winpersen[["Dper"]])] <- 0
+il12_prec_winpersen[["Rper"]][is.nan(il12_prec_winpersen[["Rper"]])] <- 0
+```
+
+```{r}
+g7 = ggplot(il12_prec_winpersen, aes(fill = Dper)) +
+  geom_sf() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  labs(title = "Fraction of votes for the Democrat", 
+       subtitle = "IL Democratic Senator 12 2022",
+       fill = "Fraction") +
+  theme_void()
+
+g8 = ggplot(il12_prec_winpersen, aes(fill = Rper)) +
+  geom_sf() +
+  scale_fill_distiller(palette = "Reds", direction = 1) +
+  labs(title = "Fraction of votes for the Republican", 
+       subtitle = "IL Republican Senator 12 2022",
+       fill = "Fraction") +
+  theme_void()
+```
+
+```{r}
+g7
+```
+
+```{r}
+g8
+```
+
+```{r}
+# Replace "path_to_shapefile" with the actual path to your .shp file
+pres <- st_read("/Users/satwika/Desktop/OSNA project/il_vest_20/il_vest_20.shp")
+```
+
+```{r}
+nrow(pres)
+View(pres)
+```
+
+```{r}
+unique_values <- unique(pres$COUNTYFP20)
+print(unique_values)
+
+```
+
+```{r}
+# Get unique values and arrange them in ascending order
+unique_values <- sort(unique(pres$COUNTYFP20))
+
+# Print the sorted unique values
+print(unique_values)
+
+```
+
+```{r}
+# Load dplyr for filtering
+library(dplyr)
+
+names(pres)
+```
+
+```{r}
+library(dplyr)
+
+# Assuming your dataframe is named 'your_dataframe'
+pres <- pres %>%
+  rename(COUNTYFP = COUNTYFP20)
+
+```
+
+{r} \# Load dplyr for filtering library(dplyr)
+
+names(pres)
+
+```{r}
+
+# Load dplyr for filtering
+library(dplyr)
+
+names(pres)
+```
+
+```{r}
+library(dplyr)
+
+# Assuming your dataframe is named 'your_dataframe'
+pres <- pres %>%
+  rename(Precinct = NAME20)
+
+```
+
+```{r}
+# Load dplyr for filtering
+library(dplyr)
+
+names(pres)
+```
+
+```{r}
+il_pres_data <- readr::read_csv("/Users/satwika/Desktop/OSNA project/spatial_analysis.csv",
+                             col_select = c(
+                               UNIQUE_ID,
+                               COUNTYFP,
+                               County,
+                               Precinct,
+                               MedianIncome,
+                               G20PREDBID,
+                               G20PRERTRU,
+                               G20PRELJOR,
+                               G20PREGHAW,
+                               G20PREACAR,
+                               G20PRESLAR
+                               ),
+                             show_col_types = FALSE)
+```
+
+```{r}
+dim(il_pres_data)
+il_pres_data |> head()
+```
+
+```{r}
+il_pres_win <- il12_prec_win |> 
+  left_join(il_pres_data, by = c("UNIQUE_ID" )) |> 
+  select(UNIQUE_ID,
+         MedianIncome,
+         starts_with("G"))
+```
+
+```{r}
+il_pres_win
+```
+
+```{r}
+il12_pres_win <- il_pres_win %>% mutate(
+  CWinner = case_when (
+    GCON12DMAR > GCON12RBOS ~ "Democratic",
+    GCON12DMAR < GCON12RBOS ~ "Republican",
+    TRUE ~ "Others"), PWinner = case_when (
+      G20PREDBID > G20PRERTRU ~ "Democratic",
+      G20PREDBID < G20PRERTRU ~ "Republican",
+      TRUE ~ "Others") )
+
+head(il12_pres_win)
+```
+
+```{r}
+g5 <- ggplot(il12_pres_win, aes(fill = CWinner)) + 
+  geom_sf() + 
+  scale_fill_manual(values = c("Democratic" = "blue",
+                                "Republican" = "red",
+                                "Others" = "green"))+
+  geom_sf(data = il122, fill = NA, lwd = 0.8) +
+  labs(title = "2022 IL12 Cong Election by Precinct")+
+  theme_void()
+
+g6 <- ggplot(il12_pres_win, aes(fill = PWinner)) + 
+  geom_sf() + 
+  scale_fill_manual(values = c("Democratic" = "blue",
+                                "Republican" = "red",
+                                "Others" = "green"))+
+  geom_sf(data = il122, fill = NA, lwd = 0.8) +
+  labs(title = "2020 IL12 President Election by Precinct")+
+  theme_void()
+
+
+```
+
+```{r}
+g5
+```
+
+```{r}
+g6
+```
+
+```{r}
+totalPDvotes <- sum(il_pres_win$G20PREDBID, na.rm = TRUE)
+totalPRvotes <- sum(il_pres_win$G20PRERTRU, na.rm = TRUE)
+totalPLvotes <- sum(il_pres_win$G20PRELJOR, na.rm = TRUE)
+totalPGvotes <- sum(il_pres_win$G20PREGHAW, na.rm = TRUE)
+totalPAvotes <- sum(il_pres_win$G20PREACAR, na.rm = TRUE)
+totalPSvotes <- sum(il_pres_win$G20PRESLAR, na.rm = TRUE)
+cat(totalPDvotes, "votes for the Democratic IL-12 President Elections\n")
+cat(totalPRvotes, "votes for the Republican IL-12 President Elections\n")
+cat(totalPLvotes, "votes for Liberterian in the IL-12 President Elections\n")
+cat(totalPGvotes, "votes for the Green in President Elections\n")
+cat(totalPAvotes, "votes for the American Solidarity Party in President Elections\n")
+cat(totalPSvotes, "votes for the Party for Socialism and Liberation in President Elections\n")
+totalCvotes <- totalPDvotes + totalPRvotes + totalPLvotes + totalPGvotes + totalPAvotes + totalPSvotes
+cat(totalCvotes, "total votes for IL-12 Presidentail Elections\n")
+```
+
+```{r}
+il12_prec_winperpresident <- il12_pres_win %>% mutate(
+  Dper = G20PREDBID/(G20PREDBID+G20PRERTRU+G20PRELJOR+G20PREGHAW+G20PREACAR+G20PRESLAR),
+  Rper = G20PRERTRU/(G20PREDBID+G20PRERTRU+G20PRELJOR+G20PREGHAW+G20PREACAR+G20PRESLAR)
+     )
+il12_prec_winperpresident[["Dper"]][is.nan(il12_prec_winperpresident[["Dper"]])] <- 0
+il12_prec_winperpresident[["Rper"]][is.nan(il12_prec_winperpresident[["Rper"]])] <- 0
+```
+
+```{r}
+g9 = ggplot(il12_prec_winperpresident, aes(fill = Dper)) +
+  geom_sf() +
+  scale_fill_distiller(palette = "Blues", direction = 1) +
+  labs(title = "Fraction of votes for the Democrat", 
+       subtitle = "IL Presidential Elections 12 2020",
+       fill = "Fraction") +
+  theme_void()
+
+g10 = ggplot(il12_prec_winperpresident, aes(fill = Rper)) +
+  geom_sf() +
+  scale_fill_distiller(palette = "Reds", direction = 1) +
+  labs(title = "Fraction of votes for the Republican", 
+       subtitle = "IL Presidential Elections 12 2020",
+       fill = "Fraction") +
+  theme_void()
+```
+
+```{r}
+g9
+```
+
+```{r}
+g10
+```
+
+```{r}
+il12_med_inc <- il12_pres_win %>%
+  mutate(IncomeCategory = case_when(
+    MedianIncome < 25000 ~ "Very Low (<$25,000)",
+    MedianIncome < 50000 ~ "Low ($25,000-$49,999)",
+    MedianIncome < 75000 ~ "Medium ($50,000-$74,999)",
+    TRUE ~ "High ($75,000+)"
+  ))
+
+```
+
+```{r}
+il12_med_inc
+```
+
+```{r}
+library(ggplot2)
+library(sf)
+
+g_income <- ggplot(il12_med_inc, aes(fill = IncomeCategory)) + 
+  geom_sf() + 
+  scale_fill_manual(values = c("Very Low (<$25,000)" = "lightblue",
+                                "Low ($25,000-$49,999)" = "lightgreen",
+                                "Medium ($50,000-$74,999)" = "orange",
+                                "High ($75,000+)" = "red")) +
+  geom_sf(data = il122, fill = NA, lwd = 0.8) +  # Assuming il122 is the outline layer
+  labs(title = "Median Income Distribution by Precinct in IL",
+       fill = "Income Category") +
+  theme_void()
+
+```
+
+```{r}
+g_income
+
+```
+
+```{r}
+library(dplyr)
+
+# Count the number of precincts in each income category
+income_counts <- il12_med_inc %>%
+  group_by(IncomeCategory) %>%
+  summarise(Count = n())
+
+# Print the counts for each category
+print(income_counts)
+
+```
+
+```{r}
+library(sf)
+library(dplyr)
+
+# Check for invalid geometries
+invalid_geometries <- il12_med_inc[!st_is_valid(il12_med_inc), ]
+print(invalid_geometries)
+
+# Attempt to make geometries valid
+il12_med_inc <- st_make_valid(il12_med_inc)
+
+# Optionally simplify the geometries
+il12_med_inc <- st_simplify(il12_med_inc, dTolerance = 0.001)
+
+# Remove any remaining invalid geometries
+il12_med_inc <- il12_med_inc[st_is_valid(il12_med_inc), ]
+
+```

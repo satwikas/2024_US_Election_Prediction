@@ -1,0 +1,227 @@
+---
+title: "proj_osna"
+output: html_document
+date: "2024-10-30"
+---
+
+```{r}
+install.packages("readxl")
+library(readxl)
+
+install.packages("naniar")
+library(naniar)
+
+# Load necessary library
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+# Load and view dataset
+election_data <- read.csv("/Users/satwika/Desktop/OSNA project/spatial_analysis.csv")
+```
+
+```{r}
+View(election_data)
+head(election_data)
+```
+```{r}
+# Structure and type of columns in dataset
+str(election_data)
+```
+``````{r}
+# Summary statistics
+summary(election_data)
+``````
+```````{r}
+# Check for Missing Values
+colSums(is.na(election_data))
+`````
+```{r}
+# Check for duplicate rows
+duplicates <- data[duplicated(election_data), ]
+print(duplicates)
+``````
+
+```{r}
+# Remove rows with any NA values
+cleaned_election_data <- na.omit(election_data)
+colSums(is.na(cleaned_election_data))
+```
+
+```{r}
+library(ggrepel)
+
+# Create a data frame for total votes
+total_votes_pres <- data.frame(
+  votes = c("Democratic", "Republican", "Libertarian", "Green", "American Solidarity", "Socialism and Liberation"),
+  Count = c(
+    sum(cleaned_election_data$G20PREDBID, na.rm = TRUE), 
+    sum(cleaned_election_data$G20PRERTRU, na.rm = TRUE), 
+    sum(cleaned_election_data$G20PRELJOR, na.rm = TRUE), 
+    sum(cleaned_election_data$G20PREGHAW, na.rm = TRUE), 
+    sum(cleaned_election_data$G20PREACAR, na.rm = TRUE), 
+    sum(cleaned_election_data$G20PRESLAR, na.rm = TRUE)
+  )
+)
+
+# Create a pie chart
+ggplot(total_votes_pres, aes(x = "", y = Count, fill = votes)) +
+  geom_bar(stat = "identity") +
+  coord_polar("y") +
+  labs(title = "Votes Distribution of Population for Presidential Election", fill = "Votes") +
+  theme_void() +
+  geom_label_repel(aes(label = Count), 
+                   nudge_y = 10,  # Adjust this value to move labels outward vertically
+                   show.legend = FALSE)  # Hide legend for labels
+
+```
+```{r}
+# Create a data frame for total votes
+total_votes_senator <- data.frame(
+  votes = c("Democratic", "Republican", "Other", "Libertarian"),
+  Count = c(
+    sum(cleaned_election_data$G22USSDDUC, na.rm = TRUE), 
+    sum(cleaned_election_data$G22USSRSAL, na.rm = TRUE), 
+    sum(cleaned_election_data$G22USSOWRI, na.rm = TRUE), 
+    sum(cleaned_election_data$G22USSLRED, na.rm = TRUE)
+  )
+)
+
+# Create a pie chart
+ggplot(total_votes_senator, aes(x = "", y = Count, fill = votes)) +
+  geom_bar(stat = "identity") +
+  coord_polar("y") +
+  labs(title = "Votes Distribution of Population for Senator Election", fill = "Votes") +
+  theme_void() +
+  geom_label_repel(aes(label = Count), 
+                   nudge_y = 5,  # Adjust this value to move labels outward vertically
+                   show.legend = FALSE)  # Hide legend for labels
+```
+```{r}
+# Create a data frame for total votes
+total_votes_cong <- data.frame(
+  votes = c("Democratic", "Republican", "Other"),
+  Count = c(
+    sum(cleaned_election_data$GCON12DMAR, na.rm = TRUE), 
+    sum(cleaned_election_data$GCON12RBOS, na.rm = TRUE), 
+    sum(cleaned_election_data$GCON12OWRI, na.rm = TRUE)
+  )
+)
+
+# Create a pie chart
+ggplot(total_votes_cong, aes(x = "", y = Count, fill = votes)) +
+  geom_bar(stat = "identity") +
+  coord_polar("y") +
+  labs(title = "Votes Distribution of Population for Congressional Election", fill = "Votes") +
+  theme_void() +
+  geom_label_repel(aes(label = Count), 
+                   nudge_y = 5,  # Adjust this value to move labels outward vertically
+                   show.legend = FALSE)  # Hide legend for labels
+```
+
+
+```{r}
+# Summarize the count of G20PREDBID for each county
+g20_count_by_county <- cleaned_election_data %>%
+  group_by(County) %>%
+  summarise(G20PREDBID_count = sum(G20PREDBID, na.rm = TRUE))
+
+# Plotting
+ggplot(g20_count_by_county, aes(x = reorder(County, G20PREDBID_count), y = G20PREDBID_count)) +
+  geom_bar(stat = "identity", fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "County-wise Democratic Presidential Vote Records",
+       x = "County",
+       y = "Count of G20PREDBID") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+```{r}
+# Summarize the count of G20PREDBID for each county
+g20_count_by_county <- cleaned_election_data %>%
+  group_by(County) %>%
+  summarise(G20PRERTRU_count = sum(G20PRERTRU, na.rm = TRUE))
+
+# Plotting
+ggplot(g20_count_by_county, aes(x = reorder(County, G20PRERTRU_count), y = G20PRERTRU_count)) +
+  geom_bar(stat = "identity", fill = "red", color = "black", alpha = 0.7) +
+  labs(title = "County-wise Republican Presidential Vote Records",
+       x = "County",
+       y = "Count of G20PRERTRU") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+# Summarize the count of G22USSDDUC for each county
+g20_count_by_county <- cleaned_election_data %>%
+  group_by(County) %>%
+  summarise(G22USSDDUC_count = sum(G22USSDDUC, na.rm = TRUE))
+
+# Plotting
+ggplot(g20_count_by_county, aes(x = reorder(County, G22USSDDUC_count), y = G22USSDDUC_count)) +
+  geom_bar(stat = "identity", fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "County-wise Democratic Sentor Vote Records",
+       x = "County",
+       y = "Count of G22USSDDUC") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+```{r}
+# Summarize the count of G22USSRSAL for each county
+g20_count_by_county <- cleaned_election_data %>%
+  group_by(County) %>%
+  summarise(G22USSRSAL_count = sum(G22USSRSAL, na.rm = TRUE))
+
+# Plotting
+ggplot(g20_count_by_county, aes(x = reorder(County, G22USSRSAL_count), y = G22USSRSAL_count)) +
+  geom_bar(stat = "identity", fill = "red", color = "black", alpha = 0.7) +
+  labs(title = "County-wise Democratic Sentor Vote Records",
+       x = "County",
+       y = "Count of G20PRERTRU") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r}
+# Summarize the count of GCON12DMAR for each county
+g20_count_by_county <- cleaned_election_data %>%
+  group_by(County) %>%
+  summarise(GCON12DMAR_count = sum(GCON12DMAR, na.rm = TRUE))
+
+# Plotting
+ggplot(g20_count_by_county, aes(x = reorder(County, GCON12DMAR_count), y = GCON12DMAR_count)) +
+  geom_bar(stat = "identity", fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "County-wise Democratic Congressional Vote Records",
+       x = "County",
+       y = "Count of G22USSDDUC") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+```{r}
+# Summarize the count of GCON12RBOS for each county
+g20_count_by_county <- cleaned_election_data %>%
+  group_by(County) %>%
+  summarise(GCON12RBOS_count = sum(GCON12RBOS, na.rm = TRUE))
+
+# Plotting
+ggplot(g20_count_by_county, aes(x = reorder(County, GCON12RBOS_count), y = GCON12RBOS_count)) +
+  geom_bar(stat = "identity", fill = "red", color = "black", alpha = 0.7) +
+  labs(title = "County-wise Democratic Congressional Vote Records",
+       x = "County",
+       y = "Count of G22USSDDUC") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
