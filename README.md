@@ -1,3 +1,6 @@
 - project_osna_demographic_data.Rmd - contains EDA for demographic data of Illinois 12 district.                
 - project_osna_electoral_data.Rmd - contains EDA for electoral data of Illinois 12 district.                           
-- project_osna_spatial_analysis.qmd - displays the boundaries of the precincts for Illinois 12 district.                     
+- project_osna_spatial_analysis.qmd - displays the boundaries of the precincts for Illinois 12 district.
+- Funding.ipynb - contains election funding analysis for Illinois 12 district.
+- OSNA_CWINNER.ipynb - congressional elections prediction in Illinois 12 district.                     
+- OSNA_PWINNER.ipynb - presidential elections prediction in Illinois 12 district.
